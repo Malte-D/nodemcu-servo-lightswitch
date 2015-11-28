@@ -42,9 +42,16 @@ srv:listen(80,function(conn)
             switch(false)
         end
         if isOn then txt ="ON" else txt = "OFF" end
-        local response = "HTTP/1.1 200 OK\r\n\r\n<h2><a href=\"ON\">ON</a><br><a href=\"OFF\">OFF</a><br></h2><i>current state: " .. txt .. "</i>"
-        conn:send(response, function()
-            conn:close()
-        end)
+        conn:send("HTTP/1.1 200 OK\r\n\r\n")
+        conn:send("<html>")
+        file.open("_control.html", "r")
+        repeat
+            local line=file.read(128)
+            if line then conn:send(line)end
+        until not line 
+        file.close()
+        conn:send("<i>current state:" .. txt .. "</i>")
+        conn:send("</html>")
+        conn:close()
     end)
 end)
