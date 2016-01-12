@@ -26,6 +26,21 @@ end
 function button()
     if gpio.read(pinButton) == 0 then
         switch(not isOn)
+        -- send state to raspberry pi
+        conn=net.createConnection(net.TCP, 0)
+        conn:on("receive", function(conn, payload) print(payload) end )
+        conn:on("connection", function(conn,payload)
+             print("sending...")
+             if isOn then
+                conn:send("GET /putEvent?r=0&t=light&v=1 / HTTP/1.0\r\n") 
+             else
+                conn:send("GET /putEvent?r=0&t=light&v=0 / HTTP/1.0\r\n") 
+             end
+             conn:send("Accept: */*\r\n") 
+             conn:send("User-Agent: Mozilla/4.0 (compatible; ESP8266;)\r\n") 
+             conn:send("\r\n") 
+        end)
+        conn:connect(8000,"192.168.178.46")
     end
 end
 
@@ -36,6 +51,7 @@ gpio.trig(pinButton, "down",function() tmr.alarm(0,50,0,button) end)
 srv = net.createServer(net.TCP)
 srv:listen(80,function(conn)
     conn:on("receive", function(conn, payload)
+        print("cmd")
         if string.find(payload, "GET /ON") then
             switch(true)
         elseif string.find(payload, "GET /OFF") then
